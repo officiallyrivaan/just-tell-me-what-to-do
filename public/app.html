@@ -309,7 +309,7 @@ footer { display: block; text-align: center; padding: 2.5rem 2rem; border-top: 1
   <div class="nav-links">
     <a href='index.html'>home</a>
     <a href="app.html" class='active'>the tool</a>
-    <a href='account.html'>account</a>
+    <a href='dashboard.html'>my patterns</a>
   </div>
   <a href="app.html" class="nav-pill">get started</a>
 </nav>
@@ -512,7 +512,7 @@ async function go() {
     result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
     addToPile(data.action, data.duration);
-    saveToAccount(data.action, data.why, data.duration, state.mood, state.time);
+    logSession(state.mood, state.time, data.action);
 
     setTimeout(() => {
       document.getElementById('timer-action-text').textContent = data.action;
@@ -627,41 +627,40 @@ function skipTimer() {
 
 function markDone(did) {
   if (did) {
-    markDoneInAccount();
+    const action = document.getElementById('r-action').textContent;
+    markStreakDay();
+    saveCompletedSession(action);
   }
   document.getElementById('timer-wrap').classList.remove('show');
   resetTimer();
 }
 
-async function markDoneInAccount() {
-  const token = localStorage.getItem('jtmwtd_token');
-  if (!token) return;
-  try {
-    const res = await fetch('/api/history', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    if (!res.ok) return;
-    const history = await res.json();
-    const latest = history[0];
-    if (latest && !latest.completed) {
-      await fetch('/api/history/' + latest._id + '/done', {
-        method: 'PATCH',
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-    }
-  } catch {}
+// STREAK
+function markStreakDay() {
+  const today = new Date().toDateString();
+  const data = JSON.parse(localStorage.getItem('jtmwtd_streak') || '{"streak":0,"lastDay":""}');
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  if (data.lastDay === today) return;
+  data.streak = (data.lastDay === yesterday) ? data.streak + 1 : 1;
+  data.lastDay = today;
+  localStorage.setItem('jtmwtd_streak', JSON.stringify(data));
 }
 
-async function saveToAccount(action, why, duration, mood, time) {
-  const token = localStorage.getItem('jtmwtd_token');
-  if (!token) return;
-  try {
-    await fetch('/api/history', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ action, why, duration, mood, time })
-    });
-  } catch {}
+function saveCompletedSession(action) {
+  const sessions = JSON.parse(localStorage.getItem('jtmwtd_sessions') || '[]');
+  sessions.unshift({ action, mood: state.mood, time: state.time, ts: Date.now(), completed: true });
+  if (sessions.length > 50) sessions.pop();
+  localStorage.setItem('jtmwtd_sessions', JSON.stringify(sessions));
+}
+
+function logSession(mood, time, action) {
+  const sessions = JSON.parse(localStorage.getItem('jtmwtd_sessions') || '[]');
+  const existing = sessions.findIndex(s => s.action === action && !s.completed);
+  if (existing === -1) {
+    sessions.unshift({ action, mood, time, ts: Date.now(), completed: false });
+    if (sessions.length > 50) sessions.pop();
+    localStorage.setItem('jtmwtd_sessions', JSON.stringify(sessions));
+  }
 }
 
 // PILE

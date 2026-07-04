@@ -1,1 +1,0 @@
-// serverless — no entrypoint needed
