@@ -316,6 +316,7 @@ footer { display: block; text-align: center; padding: 2.5rem 2rem; border-top: 1
   </div>
   <div class="nav-links">
     <a href='index.html'>home</a>
+    <a href="app.html" class="active">the tool</a>
     <a href="modes.html">modes</a>
   </div>
   <a href="modes.html" class="nav-pill">get started</a>
@@ -519,11 +520,8 @@ const MODES = {
 };
 
 const params = new URLSearchParams(window.location.search);
-const modeId = params.get('mode');
-if (!modeId || !MODES[modeId]) {
-  window.location.href = 'modes.html';
-}
-const mode = MODES[modeId] || MODES.decide;
+const modeId = (params.get('mode') && MODES[params.get('mode')]) ? params.get('mode') : 'decide';
+const mode = MODES[modeId];
 
 function applyMode() {
   document.documentElement.style.setProperty('--mode-accent', mode.accent);
