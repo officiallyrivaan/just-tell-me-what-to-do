@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name='viewport' content="width=device-width, initial-scale=1.0">
+<title>just tell me what to do</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel='stylesheet'>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+html { scroll-behavior: smooth }
+
+:root {
+  --bg: #F2EFE8;
+  --surface: #fff;
+  --border: #E2DDD4;
+  --text: #111009;
+  --muted: #8A8278;
+  --accent: #FF4D2E;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Cabinet Grotesk', sans-serif;
+  overflow-x: hidden;
+}
+
+nav {
+  position: fixed;
+  top: 1.5rem; left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: rgba(242,239,232,0.88);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.6rem 0.6rem 0.6rem 1.75rem;
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
+  width: fit-content;
+}
+.nav-brand { display: flex; flex-direction: column; gap: 1px }
+.nav-brand-top { font-weight: 900; font-size: 0.82rem; letter-spacing: -0.02em; line-height: 1; color: var(--text) }
+.nav-brand-sub { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); line-height: 1 }
+.nav-links { display: flex; gap: 1.75rem }
+.nav-links a {
+  font-size: 0.78rem; font-weight: 600; color: var(--muted);
+  text-decoration: none; transition: color .2s; letter-spacing: -0.01em;
+}
+.nav-links a:hover { color: var(--text) }
+.nav-links a.active { color: var(--text) }
+.nav-pill {
+  background: var(--text); color: #fff; border: none; border-radius: 999px;
+  padding: 0.55rem 1.25rem; font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all .2s; letter-spacing: -0.01em;
+  text-decoration: none; display: inline-flex; align-items: center;
+}
+.nav-pill:hover { background: var(--accent) }
+
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  padding: 10rem 2rem 6rem;
+  position: relative; overflow: hidden;
+}
+.hero-noise {
+  position: absolute; inset: 0; z-index: 0; opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px;
+}
+
+.hero h1 {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: clamp(4.5rem, 9vw, 9rem);
+  font-weight: 900; letter-spacing: -0.04em; line-height: 0.95;
+  max-width: 1100px; width: 100%;
+  position: relative; z-index: 2; color: var(--text);
+}
+.hero h1 em { font-style: italic; color: var(--accent) }
+.hero h1 .stroke { -webkit-text-stroke: 2px var(--text); color: transparent }
+
+.hero-sub {
+  font-size: 1.05rem; font-weight: 500; color: var(--muted);
+  max-width: 380px; line-height: 1.7;
+  margin: 2.5rem auto 3.5rem;
+  position: relative; z-index: 2;
+  font-family: 'Outfit', sans-serif;
+}
+
+.hero-cta {
+  position: relative; z-index: 2;
+  display: inline-flex; align-items: center;
+  border-radius: 18px; overflow: hidden; border: none; cursor: pointer;
+  font-family: 'Cabinet Grotesk', sans-serif;
+  transition: transform .25s ease, box-shadow .25s ease;
+  box-shadow: 0 4px 24px rgba(255,77,46,0.25);
+  text-decoration: none;
+}
+.hero-cta:hover { transform: translateY(-3px); box-shadow: 0 8px 40px rgba(255,77,46,0.35) }
+.hero-cta:active { transform: scale(0.98) }
+.cta-label { background: var(--accent); color: #fff; padding: 1.1rem 1.75rem; font-size: 1rem; font-weight: 800; letter-spacing: -0.02em }
+.cta-icon { background: #d93d20; color: #fff; padding: 1.1rem 1.25rem; display: flex; align-items: center; justify-content: center; transition: background .2s }
+.hero-cta:hover .cta-icon { background: #c23519 }
+.cta-icon svg { width: 18px; height: 18px; stroke: #fff; stroke-width: 2.5; fill: none; transition: transform .2s }
+.hero-cta:hover .cta-icon svg { transform: translateX(3px) }
+
+.hero-ticker {
+  position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+  z-index: 2; display: flex; align-items: center; gap: 0.75rem;
+  opacity: 0; animation: rise 0.8s ease 1.4s forwards;
+}
+.ticker-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: blink 2s ease infinite }
+@keyframes blink { 0%,100% { opacity: .4 } 50% { opacity: 1 } }
+.ticker-text { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted) }
+@keyframes rise {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px) }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) }
+}
+
+.marquee-wrap { overflow: hidden; background: var(--text); padding: 1.1rem 0 }
+.marquee-track { display: flex; width: max-content; animation: mq 28s linear infinite }
+.m-item { display: flex; align-items: center; gap: 2.5rem; padding: 0 2.5rem; border-right: 1px solid rgba(255,255,255,0.08) }
+.m-word { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.4); white-space: nowrap }
+.m-accent { font-size: 0.72rem; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); white-space: nowrap }
+@keyframes mq { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+
+.features {
+  padding: 10rem 2rem;
+  max-width: 1100px; margin: 0 auto;
+}
+.feat-eyebrow { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 1rem }
+.feat-title { font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 900; letter-spacing: -0.035em; line-height: 1.05; margin-bottom: 3.5rem; max-width: 600px }
+
+.feat-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-flow: dense;
+  gap: 1rem;
+}
+
+.feat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 22px; padding: 2.25rem; overflow: hidden;
+  transition: transform .35s ease, box-shadow .35s ease;
+}
+.feat-card:hover { transform: translateY(-4px); box-shadow: 0 16px 48px rgba(0,0,0,.07) }
+.fc-a { grid-column: span 5 }
+.fc-b { grid-column: span 7 }
+.fc-c { grid-column: span 4 }
+.fc-d { grid-column: span 4 }
+.fc-e { grid-column: span 4 }
+
+.fc-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: var(--bg); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 1.5rem;
+}
+.fc-icon svg { width: 20px; height: 20px; stroke: var(--accent); stroke-width: 2; fill: none }
+.fc-tag { font-size: .65rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 0.85rem; font-family: 'Outfit', sans-serif; color: var(--muted) }
+.fc-heading { font-size: 1.35rem; font-weight: 900; letter-spacing: -0.025em; line-height: 1.15; margin-bottom: .65rem }
+.fc-body { font-size: .875rem; color: var(--muted); line-height: 1.7; font-family: 'Outfit', sans-serif }
+
+.fc-stat { font-size: 3.5rem; font-weight: 900; letter-spacing: -.05em; color: var(--text); line-height: 1; margin-top: 1.5rem }
+.fc-stat-note { font-size: .72rem; color: var(--muted); font-weight: 600; margin-top: .3rem; font-family: 'Outfit', sans-serif; text-transform: uppercase; letter-spacing: .06em }
+
+.fc-visual {
+  margin-top: 1.5rem; border-radius: 14px; overflow: hidden;
+  height: 120px; background: var(--bg);
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap; padding: 1rem;
+}
+.mood-chip { padding: .4rem 1rem; border-radius: 999px; font-size: .75rem; font-weight: 700; border: 1.5px solid var(--border) }
+.mc-a { background: #FFF0EB; border-color: #FFCBB8; color: #B83018 }
+.mc-b { background: #FFFBE0; border-color: #FFE08A; color: #8A6000 }
+.mc-c { background: #E8F5EE; border-color: #A8D9BC; color: #166038 }
+.mc-d { background: #EAF2FF; border-color: #AACCFF; color: #163E8A }
+.mc-e { background: #F3EEF9; border-color: #C8AAEE; color: #4A2880 }
+
+.pin-section { background: var(--text); padding: 10rem 2rem; overflow: hidden }
+.pin-inner {
+  max-width: 1100px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: start;
+}
+.pin-left { position: sticky; top: 28vh }
+.pin-title { font-size: clamp(2.5rem, 4vw, 3.5rem); font-weight: 900; color: #fff; letter-spacing: -.04em; line-height: 1; margin-bottom: 1.25rem }
+.pin-title em { font-style: italic; color: var(--accent) }
+.pin-sub { font-size: .9rem; color: rgba(255,255,255,.38); line-height: 1.8; font-family: 'Outfit', sans-serif; max-width: 280px }
+
+.step-cards { display: flex; flex-direction: column; gap: 1.25rem; padding: 2rem 0 }
+.step-card {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 20px; padding: 2rem;
+  transition: background .3s, border-color .3s;
+}
+.step-card:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.12) }
+.step-num { font-size: .62rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: var(--accent); margin-bottom: .85rem; font-family: 'Outfit', sans-serif }
+.step-title { font-size: 1.15rem; font-weight: 800; color: #fff; letter-spacing: -.02em; margin-bottom: .5rem }
+.step-body { font-size: .83rem; color: rgba(255,255,255,.4); line-height: 1.75; font-family: 'Outfit', sans-serif }
+
+.cta-section { padding: 12rem 2rem 8rem; text-align: center; max-width: 900px; margin: 0 auto }
+.cta-heading { font-size: clamp(3rem, 7vw, 7rem); font-weight: 900; letter-spacing: -.05em; line-height: .95; margin-bottom: 1.75rem }
+.cta-heading em { font-style: italic; color: var(--accent) }
+.cta-sub { font-size: 1rem; color: var(--muted); margin-bottom: 3.5rem; line-height: 1.7; font-family: 'Outfit', sans-serif }
+.cta-btn {
+  display: inline-flex; align-items: center;
+  border-radius: 18px; overflow: hidden; border: none; cursor: pointer;
+  font-family: 'Cabinet Grotesk', sans-serif;
+  transition: transform .25s, box-shadow .25s;
+  box-shadow: 0 4px 28px rgba(0,0,0,.15);
+  text-decoration: none;
+}
+.cta-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 40px rgba(0,0,0,.2) }
+.cta-btn .cta-label { background: var(--text); color: #fff; padding: 1.2rem 2rem; font-size: 1.05rem; font-weight: 800; letter-spacing: -.02em }
+.cta-arr { background: #2a2a2a; color: #fff; padding: 1.2rem 1.4rem; display: flex; align-items: center }
+.cta-arr svg { width: 18px; height: 18px; stroke: #fff; stroke-width: 2.5; fill: none; transition: transform .2s }
+.cta-btn:hover .cta-arr svg { transform: translateX(3px) }
+
+footer { display: block; text-align: center; padding: 2.5rem 2rem; border-top: 1px solid var(--border); font-size: .72rem; color: var(--muted); font-family: 'Outfit', sans-serif; letter-spacing: .04em }
+
+@media (max-width: 760px) {
+  .fc-a, .fc-b, .fc-c, .fc-d, .fc-e { grid-column: span 12 }
+  .pin-inner { grid-template-columns: 1fr }
+  .pin-left { position: relative; top: 0 }
+  nav .nav-links { display: none }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; transition-duration: .01ms !important }
+  .marquee-track { animation: none }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <span class="nav-brand-top">just tell me</span>
+    <span class='nav-brand-sub'>what to do</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class='active'>home</a>
+    <a href="app.html">the tool</a>
+    <a href="dashboard.html">my patterns</a>
+  </div>
+  <a href="app.html" class="nav-pill">get started</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-noise"></div>
+  <h1>
+    stop<br>
+    <em>thinking.</em><br>
+    <span class='stroke'>just act.</span>
+  </h1>
+  <p class="hero-sub">dump everything in your head. get back exactly one action. no lists, no options, no spiral.</p>
+  <a href="app.html" class="hero-cta">
+    <span class="cta-label">tell me what to do</span>
+    <span class="cta-icon">
+      <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </span>
+  </a>
+  <div class="hero-ticker">
+    <div class="ticker-dot"></div>
+    <span class="ticker-text">ai-powered · mood-aware · instant clarity</span>
+  </div>
+</section>
+
+<div class="marquee-wrap">
+  <div class="marquee-track" id="mtrack"></div>
+</div>
+
+<section class="features">
+  <div class="feat-eyebrow">what you get</div>
+  <h2 class="feat-title">a real tool built around how you actually feel</h2>
+
+  <div class="feat-grid">
+    <div class="feat-card fc-a">
+      <div class="fc-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="fc-tag">focus timer</div>
+      <div class="fc-heading">25 minutes. one thing. done.</div>
+      <div class='fc-body'>After your action drops, a built-in Pomodoro fires up. 25 min countdown, then it asks if you actually did it. No excuses.</div>
+    </div>
+
+    <div class="feat-card fc-b">
+      <div class="fc-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <div class="fc-tag">patterns</div>
+      <div class="fc-heading">it learns how you work</div>
+      <div class='fc-body'>After 10+ sessions, your dashboard shows when you're most productive, what moods you show up in, and how long your tasks actually take vs how long you think they do.</div>
+      <div class="fc-stat">10+</div>
+      <div class="fc-stat-note">sessions to unlock your patterns</div>
+    </div>
+
+    <div class='feat-card fc-c'>
+      <div class="fc-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+      <div class="fc-tag">streaks</div>
+      <div class="fc-heading">keep the momentum</div>
+      <div class='fc-body'>Every day you do your one thing, your streak grows. Simple. Addictive.</div>
+    </div>
+
+    <div class='feat-card fc-d'>
+      <div class="fc-icon"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+      <div class="fc-tag">share</div>
+      <div class="fc-heading">post your one thing</div>
+      <div class='fc-body'>Generate a shareable card from your action and post it. Built-in accountability.</div>
+    </div>
+
+    <div class='feat-card fc-e'>
+      <div class="fc-tag">mood-aware</div>
+      <div class="fc-heading">reads the room</div>
+      <div class="fc-visual">
+        <div class="mood-chip mc-a">tired</div>
+        <div class="mood-chip mc-b">scattered</div>
+        <div class="mood-chip mc-c">hyped</div>
+        <div class="mood-chip mc-d">focused</div>
+        <div class='mood-chip mc-e'>overwhelmed</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="pin-section">
+  <div class="pin-inner">
+    <div class="pin-left">
+      <div class="pin-title">three steps.<br><em>zero friction.</em></div>
+      <p class="pin-sub">no accounts needed to start. your brain dump disappears the moment you close the tab.</p>
+    </div>
+    <div class="step-cards">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-title">dump your brain</div>
+        <div class='step-body'>Everything in your head — tasks, worries, half-baked ideas, things you've been avoiding. No filtering, no formatting.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-title">set your context</div>
+        <div class='step-body'>How much time? How are you feeling right now? These two signals completely change what you should do.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-title">get your one thing</div>
+        <div class='step-body'>One action. Concrete. Specific. Doable right now. Then the timer starts.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <h2 class="cta-heading">stop<br>deciding.<br><em>start doing.</em></h2>
+  <p class="cta-sub">it takes 30 seconds. you'll thank yourself later.</p>
+  <a href="app.html" class="cta-btn">
+    <span class="cta-label">tell me what to do</span>
+    <span class="cta-arr">
+      <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </span>
+  </a>
+</section>
+
+<footer>
+  just tell me what to do &nbsp;·&nbsp; no accounts &nbsp;·&nbsp; no tracking &nbsp;·&nbsp; built for humans
+</footer>
+
+<script>
+const words = [
+  ['no more lists', 'one thing only'],
+  ['your brain, cleared', 'zero overthinking'],
+  ['just do the thing', 'mood-aware ai'],
+  ['30 second clarity', 'stop deciding'],
+  ['start moving', 'instant action']
+];
+const track = document.getElementById('mtrack');
+[...words, ...words].forEach(([a, b]) => {
+  track.innerHTML += `<div class="m-item"><span class="m-word">${a}</span><span class="m-accent">${b}</span></div>`;
+});
+
+gsap.registerPlugin(ScrollTrigger);
+
+gsap.timeline({ delay: .1 })
+  .from('.hero h1', { y: 60, opacity: 0, duration: 1.1, ease: 'power4.out' })
+  .from('.hero-sub', { y: 30, opacity: 0, duration: .9, ease: 'power3.out' }, '-=.6')
+  .from('.hero-cta', { y: 24, opacity: 0, duration: .8, ease: 'power3.out' }, '-=.5');
+
+gsap.utils.toArray('.feat-card').forEach((card, i) => {
+  gsap.from(card, {
+    y: 50, opacity: 0, duration: .8, ease: 'power3.out',
+    scrollTrigger: { trigger: card, start: 'top 88%', toggleActions: 'play none none none' },
+    delay: i * 0.1
+  });
+});
+
+gsap.utils.toArray('.step-card').forEach((card, i) => {
+  gsap.from(card, {
+    y: 40, opacity: 0, duration: .75, ease: 'power3.out',
+    scrollTrigger: { trigger: card, start: 'top 88%', toggleActions: 'play none none none' },
+    delay: i * 0.15
+  });
+});
+
+gsap.from('.cta-heading', {
+  y: 50, opacity: 0, duration: 1, ease: 'power3.out',
+  scrollTrigger: { trigger: '.cta-section', start: 'top 80%' }
+});
+</script>
+</body>
+</html>

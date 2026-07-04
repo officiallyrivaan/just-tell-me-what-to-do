@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name='viewport' content="width=device-width, initial-scale=1.0">
+<title>the tool — just tell me what to do</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel='stylesheet'>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+html { scroll-behavior: smooth }
+
+:root {
+  --bg: #F2EFE8;
+  --surface: #fff;
+  --border: #E2DDD4;
+  --text: #111009;
+  --muted: #8A8278;
+  --accent: #FF4D2E;
+}
+
+body { background: var(--bg); color: var(--text); font-family: 'Cabinet Grotesk', sans-serif; overflow-x: hidden }
+
+nav {
+  position: fixed; top: 1.5rem; left: 50%; transform: translateX(-50%);
+  z-index: 100; background: rgba(242,239,232,0.88); backdrop-filter: blur(20px);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 0.6rem 0.6rem 0.6rem 1.75rem;
+  display: flex; align-items: center; gap: 2.5rem; width: fit-content;
+}
+.nav-brand { display: flex; flex-direction: column; gap: 1px }
+.nav-brand-top { font-weight: 900; font-size: 0.82rem; letter-spacing: -0.02em; line-height: 1; color: var(--text) }
+.nav-brand-sub { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); line-height: 1 }
+.nav-links { display: flex; gap: 1.75rem }
+.nav-links a { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-decoration: none; transition: color .2s; letter-spacing: -0.01em }
+.nav-links a:hover { color: var(--text) }
+.nav-links a.active { color: var(--text) }
+.nav-pill {
+  background: var(--text); color: #fff; border: none; border-radius: 999px;
+  padding: 0.55rem 1.25rem; font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all .2s;
+  text-decoration: none; display: inline-flex; align-items: center;
+}
+.nav-pill:hover { background: var(--accent) }
+
+.page-wrap {
+  min-height: 100vh;
+  padding: 9rem 2rem 5rem;
+  max-width: 820px; margin: 0 auto;
+}
+
+.page-eyebrow { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.85rem }
+.page-title { font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; letter-spacing: -0.035em; line-height: 1.05; margin-bottom: 0.75rem }
+.page-sub { font-size: 0.95rem; color: var(--muted); font-family: 'Outfit', sans-serif; margin-bottom: 3rem; line-height: 1.65 }
+
+.app-card { background: var(--surface); border: 1px solid var(--border); border-radius: 28px; overflow: hidden }
+.app-inner { padding: 2.75rem }
+
+.field-block { margin-bottom: 2rem }
+.f-label {
+  font-size: 0.68rem; font-weight: 800; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.8rem;
+  display: block; font-family: 'Outfit', sans-serif;
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 0.45rem }
+.chip {
+  padding: 0.45rem 1.05rem; border-radius: 999px;
+  border: 1.5px solid var(--border); background: var(--bg);
+  color: var(--muted); font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  transition: all .15s; user-select: none;
+}
+.chip:hover { border-color: var(--text); color: var(--text) }
+.chip.on { background: var(--text); border-color: var(--text); color: #fff }
+.chip.on.c-tired { background: #FF4D2E; border-color: #FF4D2E }
+.chip.on.c-hyped { background: #2ECC8A; border-color: #2ECC8A }
+.chip.on.c-focus { background: #2E7DFF; border-color: #2E7DFF }
+
+.f-divider { height: 1px; background: var(--border); margin: 2rem 0 }
+
+textarea, .text-input {
+  width: 100%; background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 1rem 1.15rem; color: var(--text);
+  font-family: 'Outfit', sans-serif; font-size: 0.95rem; outline: none;
+  resize: none; line-height: 1.65; transition: border-color .2s;
+}
+textarea::placeholder, .text-input::placeholder { color: var(--muted) }
+textarea:focus, .text-input:focus { border-color: var(--accent); background: #fff }
+
+.char-count { text-align: right; font-size: 0.68rem; font-weight: 600; color: var(--muted); margin-top: 0.4rem; font-family: 'Outfit', sans-serif; transition: color .2s }
+.char-count.warn { color: var(--accent) }
+
+.go-btn {
+  width: 100%; background: var(--text); color: #fff; border: none;
+  border-radius: 16px; padding: 1.15rem;
+  font-family: 'Cabinet Grotesk', sans-serif; font-size: 1rem; font-weight: 800;
+  cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+  letter-spacing: -0.02em; margin-top: 2rem;
+}
+.go-btn:hover { background: #2a2a2a; transform: translateY(-2px) }
+.go-btn:active { transform: scale(0.98) }
+.go-btn:disabled { opacity: .35; cursor: not-allowed; transform: none }
+
+.spin {
+  width: 18px; height: 18px;
+  border: 2.5px solid rgba(255,255,255,.25); border-top-color: #fff;
+  border-radius: 50%; animation: spin .75s linear infinite;
+  display: none; flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg) } }
+
+.err-box {
+  display: none; padding: .8rem 1rem; background: #FFF0EB;
+  border: 1px solid #FFCBB8; border-radius: 12px; color: #C0391A;
+  font-size: .82rem; font-weight: 600; line-height: 1.5; margin-top: 1rem;
+  font-family: 'Outfit', sans-serif;
+}
+.err-box.show { display: block }
+
+/* result */
+.result { display: none; margin-top: 1.5rem; animation: up .45s ease }
+.result.show { display: block }
+@keyframes up { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: translateY(0) } }
+
+.result-card { background: var(--text); border-radius: 22px; overflow: hidden }
+.result-top { padding: 2rem 2rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,.07) }
+.r-eyebrow { font-size: .65rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: rgba(255,255,255,.35); margin-bottom: .75rem; font-family: 'Outfit', sans-serif }
+.r-action { font-size: 1.4rem; font-weight: 800; line-height: 1.35; color: #fff; letter-spacing: -.02em }
+.result-body { padding: 1.5rem 2rem 2rem; display: flex; flex-direction: column; gap: 1.25rem }
+.r-why-label { font-size: .65rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.3); margin-bottom: .4rem; font-family: 'Outfit', sans-serif }
+.r-why { font-size: .9rem; color: rgba(255,255,255,.68); line-height: 1.75; font-weight: 500; font-family: 'Outfit', sans-serif }
+.r-time { display: inline-flex; align-items: center; gap: .4rem; padding: .3rem .9rem; border-radius: 999px; background: rgba(255,255,255,.07); font-size: .75rem; font-weight: 700; color: rgba(255,255,255,.45); width: fit-content; font-family: 'Outfit', sans-serif }
+
+.result-actions { display: flex; gap: .5rem; margin-top: 1rem }
+.again-btn, .copy-btn, .share-btn {
+  flex: 1; padding: .75rem; border-radius: 12px;
+  border: 1.5px solid var(--border); background: transparent;
+  font-family: 'Cabinet Grotesk', sans-serif; font-size: .82rem; font-weight: 700;
+  cursor: pointer; transition: all .15s;
+}
+.again-btn { color: var(--muted) }
+.again-btn:hover { border-color: var(--text); color: var(--text) }
+.copy-btn { color: var(--accent); border-color: #FFCBB8; background: #FFF6F4 }
+.copy-btn:hover { background: #FFE8E3; border-color: var(--accent) }
+.copy-btn.copied { color: #1E6B42; border-color: #A8D9BC; background: #E8F5EE }
+.share-btn { color: #163E8A; border-color: #AACCFF; background: #EAF2FF }
+.share-btn:hover { background: #ddeeff; border-color: #163E8A }
+
+/* focus timer */
+.timer-wrap {
+  display: none; margin-top: 1.5rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 22px; padding: 2rem; text-align: center;
+  animation: up .4s ease;
+}
+.timer-wrap.show { display: block }
+.timer-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; font-family: 'Outfit', sans-serif }
+.timer-ring-wrap { position: relative; width: 140px; height: 140px; margin: 0 auto 1.25rem }
+.timer-ring { transform: rotate(-90deg) }
+.ring-bg { fill: none; stroke: var(--border); stroke-width: 6 }
+.ring-prog { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset .9s linear }
+.timer-num {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 1.75rem; font-weight: 900; letter-spacing: -0.04em; color: var(--text);
+}
+.timer-action-text { font-size: 0.88rem; color: var(--muted); font-family: 'Outfit', sans-serif; margin-bottom: 1.5rem; line-height: 1.6; max-width: 320px; margin-left: auto; margin-right: auto }
+.timer-btns { display: flex; gap: 0.5rem; justify-content: center }
+.timer-btn {
+  padding: 0.6rem 1.4rem; border-radius: 12px; border: 1.5px solid var(--border);
+  background: transparent; font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all .15s; color: var(--muted);
+}
+.timer-btn:hover { border-color: var(--text); color: var(--text) }
+.timer-btn.primary { background: var(--text); color: #fff; border-color: var(--text) }
+.timer-btn.primary:hover { background: #2a2a2a }
+.timer-done-prompt { display: none; padding: 1.25rem; background: #E8F5EE; border: 1px solid #A8D9BC; border-radius: 14px; margin-top: 1rem }
+.timer-done-prompt p { font-size: 0.9rem; font-weight: 700; color: #166038; margin-bottom: 0.85rem }
+.timer-done-btns { display: flex; gap: 0.5rem }
+.tdone-btn {
+  flex: 1; padding: 0.6rem; border-radius: 10px; border: 1.5px solid #A8D9BC;
+  background: transparent; font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 0.8rem; font-weight: 700; cursor: pointer; color: #166038; transition: all .15s;
+}
+.tdone-btn.yes { background: #166038; color: #fff; border-color: #166038 }
+.tdone-btn.yes:hover { background: #0f4f2c }
+.tdone-btn:hover { background: #d0eedc }
+
+/* share modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.show { display: flex }
+.share-modal {
+  background: var(--surface); border-radius: 24px; padding: 2rem;
+  width: 100%; max-width: 420px; margin: 1rem;
+  animation: up .3s ease;
+}
+.share-modal-title { font-size: 1.1rem; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 0.5rem }
+.share-modal-sub { font-size: 0.82rem; color: var(--muted); font-family: 'Outfit', sans-serif; margin-bottom: 1.5rem }
+
+.share-card-preview {
+  background: var(--text); border-radius: 18px; padding: 2rem;
+  margin-bottom: 1.5rem;
+}
+.sc-pre-label { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,.3); margin-bottom: 0.6rem; font-family: 'Outfit', sans-serif }
+.sc-pre-action { font-size: 1.1rem; font-weight: 800; color: #fff; line-height: 1.35; letter-spacing: -0.02em; margin-bottom: 1rem }
+.sc-pre-footer { display: flex; align-items: center; justify-content: space-between }
+.sc-pre-badge { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent) }
+.sc-pre-url { font-size: 0.62rem; color: rgba(255,255,255,.25); font-family: 'Outfit', sans-serif }
+
+.share-modal-btns { display: flex; gap: 0.5rem }
+.sm-btn {
+  flex: 1; padding: 0.75rem; border-radius: 12px; border: 1.5px solid var(--border);
+  background: transparent; font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 0.82rem; font-weight: 700; cursor: pointer; color: var(--muted); transition: all .15s;
+}
+.sm-btn:hover { border-color: var(--text); color: var(--text) }
+.sm-btn.primary { background: var(--text); color: #fff; border-color: var(--text) }
+.sm-btn.primary:hover { background: #2a2a2a }
+
+/* to-do pile */
+.pile-toggle {
+  position: fixed; bottom: 1.75rem; right: 1.75rem; z-index: 201;
+  background: var(--text); color: #fff; border: none; border-radius: 999px;
+  padding: 0.65rem 1.25rem 0.65rem 1rem;
+  font-family: 'Cabinet Grotesk', sans-serif; font-size: 0.82rem; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,.2); transition: background .2s;
+}
+.pile-toggle:hover { background: #2a2a2a }
+
+.pile-badge {
+  background: var(--accent); color: #fff; border-radius: 999px;
+  font-size: 0.68rem; font-weight: 800; min-width: 18px; height: 18px;
+  display: inline-flex; align-items: center; justify-content: center; padding: 0 4px;
+}
+.pile-badge.hidden { display: none }
+
+.pile-drawer {
+  position: fixed; right: 0; bottom: 5rem; width: 100%; max-width: 420px;
+  z-index: 200; background: var(--surface);
+  border-top: 1px solid var(--border); border-left: 1px solid var(--border);
+  border-radius: 20px 0 0 0; box-shadow: -4px 0 40px rgba(0,0,0,.1);
+  max-height: 65vh; display: flex; flex-direction: column;
+  transform: translateY(calc(100% + 5rem));
+  transition: transform .35s cubic-bezier(.4,0,.2,1);
+}
+.pile-drawer.open { transform: translateY(0) }
+
+.pile-header {
+  padding: 1.5rem 1.5rem 1rem;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.pile-title { font-size: 1rem; font-weight: 900; letter-spacing: -0.02em }
+.pile-title span { font-size: 0.7rem; font-weight: 600; color: var(--muted); margin-left: 0.5rem; font-family: 'Outfit', sans-serif }
+.pile-close {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 999px;
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 0.75rem; color: var(--muted); transition: all .15s;
+}
+.pile-close:hover { background: var(--border); color: var(--text) }
+.pile-list { overflow-y: auto; padding: 1rem 1.5rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; flex: 1 }
+.pile-empty { text-align: center; padding: 2.5rem 1rem; color: var(--muted); font-size: 0.85rem; font-family: 'Outfit', sans-serif; line-height: 1.6 }
+.pile-empty strong { display: block; font-size: 1.5rem; margin-bottom: 0.5rem }
+
+.pile-item {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 14px;
+  padding: 1rem 1.1rem; display: flex; align-items: flex-start; gap: 0.75rem;
+  transition: opacity .3s, transform .3s, max-height .4s; overflow: hidden; max-height: 200px;
+}
+.pile-item.removing { opacity: 0; transform: translateX(20px); max-height: 0; padding: 0; margin: 0; border: none }
+.pile-item-text { flex: 1 }
+.pile-item-action { font-size: 0.88rem; font-weight: 700; color: var(--text); letter-spacing: -0.01em; line-height: 1.4; margin-bottom: 0.25rem }
+.pile-item-meta { font-size: 0.68rem; color: var(--muted); font-family: 'Outfit', sans-serif }
+.did-it-btn {
+  flex-shrink: 0; background: #E8F5EE; border: 1.5px solid #A8D9BC; color: #166038;
+  border-radius: 999px; padding: 0.35rem 0.85rem;
+  font-family: 'Cabinet Grotesk', sans-serif; font-size: 0.75rem; font-weight: 700;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.did-it-btn:hover { background: #2ECC8A; border-color: #2ECC8A; color: #fff }
+
+footer { display: block; text-align: center; padding: 2.5rem 2rem; border-top: 1px solid var(--border); font-size: .72rem; color: var(--muted); font-family: 'Outfit', sans-serif; letter-spacing: .04em; margin-top: 4rem }
+
+@media (max-width: 760px) {
+  nav .nav-links { display: none }
+  .result-actions { flex-direction: column }
+  .pile-drawer { max-width: 100%; border-radius: 20px 20px 0 0; border-left: none }
+  .pile-toggle { right: 1rem; bottom: 1rem }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; transition-duration: .01ms !important }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <span class="nav-brand-top">just tell me</span>
+    <span class='nav-brand-sub'>what to do</span>
+  </div>
+  <div class="nav-links">
+    <a href='index.html'>home</a>
+    <a href="app.html" class='active'>the tool</a>
+    <a href='account.html'>account</a>
+  </div>
+  <a href="app.html" class="nav-pill">get started</a>
+</nav>
+
+<div class="page-wrap">
+  <div class="page-eyebrow">the tool</div>
+  <h1 class='page-title'>tell me about right now</h1>
+  <p class="page-sub">pick your time, your mood, dump what's in your head. get one action back.</p>
+
+  <div class="app-card">
+    <div class="app-inner">
+
+      <div class="field-block">
+        <span class="f-label">how much time do you have?</span>
+        <div class="chips">
+          <div class='chip' data-g="time" data-v="5 minutes">5 min</div>
+          <div class="chip" data-g="time" data-v="15 minutes">15 min</div>
+          <div class='chip' data-g="time" data-v="30 minutes">30 min</div>
+          <div class="chip" data-g="time" data-v="1 hour">1 hour</div>
+          <div class='chip' data-g="time" data-v="a few hours">a few hours</div>
+        </div>
+      </div>
+
+      <div class="f-divider"></div>
+
+      <div class="field-block">
+        <span class='f-label'>how are you feeling?</span>
+        <div class="chips">
+          <div class="chip c-focus" data-g="mood" data-v="focused and energised">focused</div>
+          <div class='chip' data-g="mood" data-v="scattered and all over the place">scattered</div>
+          <div class="chip c-tired" data-g="mood" data-v="tired and low energy">tired</div>
+          <div class='chip c-tired' data-g="mood" data-v="anxious and overwhelmed">overwhelmed</div>
+          <div class="chip c-hyped" data-g="mood" data-v="motivated and ready to go">hyped</div>
+          <div class='chip' data-g="mood" data-v="bored and restless">bored</div>
+        </div>
+      </div>
+
+      <div class="f-divider"></div>
+
+      <div class="field-block" style='margin-bottom: 1.25rem'>
+        <span class="f-label">what's on your mind?</span>
+        <textarea id="dump" rows="4" maxlength="2000"
+          placeholder="just type everything — tasks, worries, ideas, stuff you've been putting off. don't filter it."
+          oninput="updateChar()"></textarea>
+        <div class='char-count' id="char-count">0 / 2000</div>
+      </div>
+
+      <div class="field-block" style="margin-bottom: 0">
+        <span class='f-label'>any limits right now? (optional)</span>
+        <input type="text" class="text-input" id="limits" placeholder="e.g. on my phone, can't make noise, no internet">
+      </div>
+
+      <div class="err-box" id="err"></div>
+
+      <button class='go-btn' id="gobtn" onclick="go()">
+        <div class="spin" id="spin"></div>
+        <span id='btn-label'>tell me what to do</span>
+      </button>
+
+      <div class="result" id="result">
+        <div class="result-card">
+          <div class="result-top">
+            <div class='r-eyebrow'>do this right now</div>
+            <div class="r-action" id="r-action"></div>
+          </div>
+          <div class="result-body">
+            <div>
+              <div class='r-why-label'>why this</div>
+              <div class="r-why" id="r-why"></div>
+            </div>
+            <div class="r-time" id="r-time"></div>
+          </div>
+        </div>
+        <div class="result-actions">
+          <button class='again-btn' onclick="reset()">↩ try again</button>
+          <button class="copy-btn" id="copy-btn" onclick="copyResult()">copy this</button>
+          <button class='share-btn' onclick="openShare()">share</button>
+        </div>
+      </div>
+
+      <div class="timer-wrap" id="timer-wrap">
+        <div class='timer-label'>focus timer</div>
+        <div class="timer-ring-wrap">
+          <svg class='timer-ring' width="140" height="140" viewBox="0 0 140 140">
+            <circle class="ring-bg" cx="70" cy="70" r="60"/>
+            <circle class='ring-prog' id="ring-prog" cx="70" cy="70" r="60"
+              stroke-dasharray="376.99" stroke-dashoffset="0"/>
+          </svg>
+          <div class="timer-num" id="timer-num">25:00</div>
+        </div>
+        <p class='timer-action-text' id="timer-action-text"></p>
+        <div class="timer-btns">
+          <button class='timer-btn' onclick="skipTimer()">skip</button>
+          <button class="timer-btn primary" id="timer-toggle" onclick="toggleTimer()">start</button>
+        </div>
+        <div class='timer-done-prompt' id="timer-done-prompt">
+          <p>time's up — did you do it?</p>
+          <div class="timer-done-btns">
+            <button class='tdone-btn yes' onclick="markDone(true)">yes, done</button>
+            <button class="tdone-btn" onclick="markDone(false)">not quite</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="share-modal-overlay" onclick="closeShare(event)">
+  <div class="share-modal">
+    <div class='share-modal-title'>share your one thing</div>
+    <div class="share-modal-sub">copy the text or screenshot this card and post it.</div>
+    <div class='share-card-preview' id="share-card-preview">
+      <div class="sc-pre-label">doing this right now</div>
+      <div class='sc-pre-action' id="sc-pre-action"></div>
+      <div class="sc-pre-footer">
+        <span class='sc-pre-badge'>just tell me what to do</span>
+        <span class="sc-pre-url">jtmwtd.app</span>
+      </div>
+    </div>
+    <div class='share-modal-btns'>
+      <button class="sm-btn" onclick="closeShare()">cancel</button>
+      <button class='sm-btn primary' onclick="copyShareText()">copy text</button>
+    </div>
+  </div>
+</div>
+
+<button class="pile-toggle" onclick="togglePile()">
+  <span>to-do pile</span>
+  <span class='pile-badge hidden' id="pile-badge">0</span>
+</button>
+
+<div class="pile-drawer" id="pile-drawer">
+  <div class='pile-header'>
+    <div class="pile-title">to-do pile <span>last 5 actions</span></div>
+    <button class='pile-close' onclick="togglePile()">✕</button>
+  </div>
+  <div class="pile-list" id="pile-list"></div>
+</div>
+
+<footer>
+  just tell me what to do &nbsp;·&nbsp; no accounts &nbsp;·&nbsp; no tracking &nbsp;·&nbsp; built for humans
+</footer>
+
+<script>
+const state = { time: null, mood: null };
+
+document.querySelectorAll('.chip').forEach(c => {
+  c.addEventListener('click', () => {
+    const g = c.dataset.g;
+    document.querySelectorAll(`.chip[data-g="${g}"]`).forEach(x => x.classList.remove('on'));
+    c.classList.add('on');
+    state[g] = c.dataset.v;
+  });
+});
+
+function updateChar() {
+  const v = document.getElementById('dump').value.length;
+  const el = document.getElementById('char-count');
+  el.textContent = `${v} / 2000`;
+  el.classList.toggle('warn', v > 1800);
+}
+
+async function go() {
+  const dump = document.getElementById('dump').value.trim();
+  const limits = document.getElementById('limits').value.trim();
+  const err = document.getElementById('err');
+
+  if (!state.time || !state.mood || !dump) {
+    err.textContent = "fill in your time, mood, and what's on your mind first.";
+    err.classList.add('show'); return;
+  }
+  err.classList.remove('show');
+
+  const btn = document.getElementById('gobtn');
+  const spin = document.getElementById('spin');
+  const label = document.getElementById('btn-label');
+  const result = document.getElementById('result');
+
+  btn.disabled = true; spin.style.display = 'block'; label.textContent = 'thinking...';
+  result.classList.remove('show');
+  document.getElementById('timer-wrap').classList.remove('show');
+
+  try {
+    const res = await fetch('/api/decide', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ time: state.time, mood: state.mood, dump, limits })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `error ${res.status}`);
+
+    document.getElementById('r-action').textContent = data.action;
+    document.getElementById('r-why').textContent = data.why;
+    document.getElementById('r-time').textContent = '⏱ ' + data.duration;
+    document.getElementById('copy-btn').textContent = 'copy this';
+    document.getElementById('copy-btn').classList.remove('copied');
+
+    result.classList.add('show');
+    result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    addToPile(data.action, data.duration);
+    saveToAccount(data.action, data.why, data.duration, state.mood, state.time);
+
+    setTimeout(() => {
+      document.getElementById('timer-action-text').textContent = data.action;
+      document.getElementById('timer-wrap').classList.add('show');
+      resetTimer();
+    }, 600);
+
+  } catch(e) {
+    err.textContent = e.message || 'something went wrong. try again.';
+    err.classList.add('show');
+  }
+
+  btn.disabled = false; spin.style.display = 'none'; label.textContent = 'tell me what to do';
+}
+
+function reset() {
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('timer-wrap').classList.remove('show');
+  document.getElementById('dump').value = '';
+  document.getElementById('limits').value = '';
+  document.getElementById('char-count').textContent = '0 / 2000';
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+  state.time = null; state.mood = null;
+  stopTimer();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function copyResult() {
+  const action = document.getElementById('r-action').textContent;
+  const why = document.getElementById('r-why').textContent;
+  const duration = document.getElementById('r-time').textContent;
+  navigator.clipboard.writeText(`DO THIS NOW:\n${action}\n\nWhy: ${why}\n\n${duration}`).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✓ copied'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'copy this'; btn.classList.remove('copied') }, 2000);
+  });
+}
+
+function openShare() {
+  const action = document.getElementById('r-action').textContent;
+  document.getElementById('sc-pre-action').textContent = action;
+  document.getElementById('share-modal-overlay').classList.add('show');
+}
+function closeShare(e) {
+  if (!e || e.target === document.getElementById('share-modal-overlay')) {
+    document.getElementById('share-modal-overlay').classList.remove('show');
+  }
+}
+function copyShareText() {
+  const action = document.getElementById('r-action').textContent;
+  navigator.clipboard.writeText(`today's one thing:\n"${action}"\n\njust tell me what to do → jtmwtd.app`).then(() => {
+    const btn = document.querySelector('.sm-btn.primary');
+    btn.textContent = '✓ copied';
+    setTimeout(() => { btn.textContent = 'copy text'; closeShare() }, 1500);
+  });
+}
+
+// TIMER
+let timerInterval = null;
+let timerSeconds = 25 * 60;
+let timerRunning = false;
+const TOTAL = 25 * 60;
+const CIRC = 376.99;
+
+function pad(n) { return String(n).padStart(2, '0') }
+
+function updateTimerDisplay() {
+  const m = Math.floor(timerSeconds / 60);
+  const s = timerSeconds % 60;
+  document.getElementById('timer-num').textContent = `${pad(m)}:${pad(s)}`;
+  const offset = CIRC * (1 - timerSeconds / TOTAL);
+  document.getElementById('ring-prog').style.strokeDashoffset = offset;
+}
+
+function resetTimer() {
+  stopTimer();
+  timerSeconds = TOTAL;
+  updateTimerDisplay();
+  document.getElementById('timer-toggle').textContent = 'start';
+  document.getElementById('timer-done-prompt').style.display = 'none';
+}
+
+function toggleTimer() {
+  if (timerRunning) {
+    stopTimer();
+    document.getElementById('timer-toggle').textContent = 'resume';
+  } else {
+    timerRunning = true;
+    document.getElementById('timer-toggle').textContent = 'pause';
+    timerInterval = setInterval(() => {
+      timerSeconds--;
+      updateTimerDisplay();
+      if (timerSeconds <= 0) {
+        stopTimer();
+        document.getElementById('timer-done-prompt').style.display = 'block';
+        document.getElementById('timer-toggle').style.display = 'none';
+      }
+    }, 1000);
+  }
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+}
+
+function skipTimer() {
+  stopTimer();
+  document.getElementById('timer-wrap').classList.remove('show');
+  resetTimer();
+}
+
+function markDone(did) {
+  if (did) {
+    markDoneInAccount();
+  }
+  document.getElementById('timer-wrap').classList.remove('show');
+  resetTimer();
+}
+
+async function markDoneInAccount() {
+  const token = localStorage.getItem('jtmwtd_token');
+  if (!token) return;
+  try {
+    const res = await fetch('/api/history', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) return;
+    const history = await res.json();
+    const latest = history[0];
+    if (latest && !latest.completed) {
+      await fetch('/api/history/' + latest._id + '/done', {
+        method: 'PATCH',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+    }
+  } catch {}
+}
+
+async function saveToAccount(action, why, duration, mood, time) {
+  const token = localStorage.getItem('jtmwtd_token');
+  if (!token) return;
+  try {
+    await fetch('/api/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ action, why, duration, mood, time })
+    });
+  } catch {}
+}
+
+// PILE
+const PILE_KEY = 'jtmwtd_pile';
+function getPile() { try { return JSON.parse(localStorage.getItem(PILE_KEY)) || [] } catch { return [] } }
+function savePile(p) { localStorage.setItem(PILE_KEY, JSON.stringify(p)) }
+
+function addToPile(action, duration) {
+  const pile = getPile();
+  pile.unshift({ action, duration, ts: Date.now() });
+  if (pile.length > 5) pile.pop();
+  savePile(pile); renderPile();
+}
+
+function removeFromPile(ts) {
+  const item = document.querySelector(`.pile-item[data-ts="${ts}"]`);
+  if (item) {
+    item.classList.add('removing');
+    setTimeout(() => { savePile(getPile().filter(p => p.ts !== ts)); renderPile() }, 400);
+  }
+}
+
+function timeAgo(ts) {
+  const m = Math.floor((Date.now() - ts) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h/24)}d ago`;
+}
+
+function renderPile() {
+  const pile = getPile();
+  const list = document.getElementById('pile-list');
+  const badge = document.getElementById('pile-badge');
+  badge.textContent = pile.length;
+  badge.classList.toggle('hidden', pile.length === 0);
+  if (!pile.length) {
+    list.innerHTML = '<div class="pile-empty"><strong>📭</strong>nothing here yet.<br>complete an action and it\'ll show up.</div>';
+    return;
+  }
+  list.innerHTML = pile.map(p => `
+    <div class="pile-item" data-ts="${p.ts}">
+      <div class="pile-item-text">
+        <div class="pile-item-action">${p.action}</div>
+        <div class='pile-item-meta'>${p.duration} · ${timeAgo(p.ts)}</div>
+      </div>
+      <button class="did-it-btn" onclick="removeFromPile(${p.ts})">✓ did it</button>
+    </div>
+  `).join('');
+}
+
+function togglePile() { document.getElementById('pile-drawer').classList.toggle('open') }
+
+renderPile();
+</script>
+</body>
+</html>

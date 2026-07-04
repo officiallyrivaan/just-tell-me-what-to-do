@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name='viewport' content="width=device-width, initial-scale=1.0">
+<title>account — just tell me what to do</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel='stylesheet'>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+html { scroll-behavior: smooth }
+:root {
+  --bg: #F2EFE8; --surface: #fff; --border: #E2DDD4;
+  --text: #111009; --muted: #8A8278; --accent: #FF4D2E;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Cabinet Grotesk', sans-serif; overflow-x: hidden }
+
+nav {
+  position: fixed; top: 1.5rem; left: 50%; transform: translateX(-50%);
+  z-index: 100; background: rgba(242,239,232,0.88); backdrop-filter: blur(20px);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 0.6rem 0.6rem 0.6rem 1.75rem;
+  display: flex; align-items: center; gap: 2.5rem; width: fit-content;
+}
+.nav-brand { display: flex; flex-direction: column; gap: 1px }
+.nav-brand-top { font-weight: 900; font-size: 0.82rem; letter-spacing: -0.02em; line-height: 1; color: var(--text) }
+.nav-brand-sub { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); line-height: 1 }
+.nav-links { display: flex; gap: 1.75rem }
+.nav-links a { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-decoration: none; transition: color .2s; letter-spacing: -0.01em }
+.nav-links a:hover { color: var(--text) }
+.nav-links a.active { color: var(--text) }
+.nav-pill {
+  background: var(--text); color: #fff; border: none; border-radius: 999px;
+  padding: 0.55rem 1.25rem; font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all .2s;
+  text-decoration: none; display: inline-flex; align-items: center;
+}
+.nav-pill:hover { background: var(--accent) }
+
+.page-wrap { min-height: 100vh; padding: 9rem 2rem 5rem; max-width: 860px; margin: 0 auto }
+
+/* auth forms */
+.auth-wrap {
+  max-width: 420px; margin: 0 auto;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.auth-icon {
+  width: 56px; height: 56px; border-radius: 16px; background: var(--surface);
+  border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;
+}
+.auth-icon svg { width: 24px; height: 24px; stroke: var(--text); stroke-width: 2; fill: none }
+.auth-title { font-size: 1.75rem; font-weight: 900; letter-spacing: -0.03em; margin-bottom: 0.5rem }
+.auth-sub { font-size: 0.88rem; color: var(--muted); font-family: 'Outfit', sans-serif; line-height: 1.6; margin-bottom: 2rem }
+
+.auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 2rem; width: 100%; text-align: left }
+
+.auth-field { margin-bottom: 1.25rem }
+.auth-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.6rem; display: block; font-family: 'Outfit', sans-serif }
+.auth-input {
+  width: 100%; background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 12px; padding: 0.85rem 1rem; color: var(--text);
+  font-family: 'Cabinet Grotesk', sans-serif; font-size: 0.95rem; outline: none;
+  transition: border-color .2s;
+}
+.auth-input:focus { border-color: var(--accent); background: #fff }
+.auth-input::placeholder { color: var(--muted) }
+
+.auth-btn {
+  width: 100%; background: var(--text); color: #fff; border: none;
+  border-radius: 14px; padding: 1rem; margin-top: 0.5rem;
+  font-family: 'Cabinet Grotesk', sans-serif; font-size: 0.95rem; font-weight: 800;
+  cursor: pointer; transition: all .2s; letter-spacing: -0.01em;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+}
+.auth-btn:hover { background: #2a2a2a; transform: translateY(-1px) }
+.auth-btn:disabled { opacity: .4; cursor: not-allowed; transform: none }
+
+.auth-switch { margin-top: 1.25rem; font-size: 0.82rem; color: var(--muted); font-family: 'Outfit', sans-serif; text-align: center }
+.auth-switch a { color: var(--text); font-weight: 700; cursor: pointer; text-decoration: underline }
+
+.auth-err {
+  display: none; padding: .7rem .9rem; background: #FFF0EB; border: 1px solid #FFCBB8;
+  border-radius: 10px; color: #C0391A; font-size: .8rem; font-weight: 600;
+  line-height: 1.5; margin-top: 1rem; font-family: 'Outfit', sans-serif;
+}
+.auth-err.show { display: block }
+
+.auth-spin {
+  width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+  border-radius: 50%; animation: spin .7s linear infinite; display: none;
+}
+@keyframes spin { to { transform: rotate(360deg) } }
+
+/* dashboard */
+.dash-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem;
+}
+.dash-greeting { font-size: clamp(1.75rem, 3.5vw, 2.5rem); font-weight: 900; letter-spacing: -0.035em; line-height: 1.1 }
+.dash-greeting em { font-style: italic; color: var(--accent) }
+.dash-meta { font-size: 0.82rem; color: var(--muted); font-family: 'Outfit', sans-serif; margin-top: 0.4rem }
+
+.logout-btn {
+  padding: 0.5rem 1.1rem; border-radius: 999px; border: 1.5px solid var(--border);
+  background: transparent; font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 0.75rem; font-weight: 700; color: var(--muted); cursor: pointer; transition: all .15s;
+}
+.logout-btn:hover { border-color: var(--accent); color: var(--accent) }
+
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 1.5rem }
+.stat-label { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; font-family: 'Outfit', sans-serif }
+.stat-val { font-size: 2.5rem; font-weight: 900; letter-spacing: -0.05em; line-height: 1; color: var(--text) }
+.stat-val.accent { color: var(--accent) }
+.stat-val.green { color: #166038 }
+.stat-note { font-size: 0.7rem; color: var(--muted); font-family: 'Outfit', sans-serif; margin-top: 0.25rem }
+
+.streak-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 0.85rem }
+.streak-day { width: 20px; height: 20px; border-radius: 5px; background: var(--bg); border: 1px solid var(--border) }
+.streak-day.done { background: var(--accent); border-color: var(--accent) }
+.streak-day.today { background: var(--text); border-color: var(--text) }
+
+.history-card { background: var(--surface); border: 1px solid var(--border); border-radius: 22px; overflow: hidden; margin-top: 1rem }
+.history-head { padding: 1.5rem 1.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between }
+.history-title { font-size: 1rem; font-weight: 900; letter-spacing: -0.02em }
+.history-count { font-size: 0.72rem; color: var(--muted); font-family: 'Outfit', sans-serif }
+.history-list { padding: 1rem 1.75rem 1.75rem; display: flex; flex-direction: column; gap: 0.65rem; max-height: 480px; overflow-y: auto }
+
+.history-item {
+  display: flex; align-items: flex-start; gap: 0.85rem;
+  padding: 1rem 1.1rem; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 14px; transition: border-color .15s;
+}
+.history-item:hover { border-color: var(--text) }
+.h-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px }
+.h-dot.done { background: #2ECC8A }
+.h-dot.pending { background: var(--border) }
+.h-text { flex: 1 }
+.h-action { font-size: 0.88rem; font-weight: 700; color: var(--text); line-height: 1.4; margin-bottom: 0.2rem }
+.h-meta { font-size: 0.68rem; color: var(--muted); font-family: 'Outfit', sans-serif }
+.h-done-btn {
+  flex-shrink: 0; background: #E8F5EE; border: 1.5px solid #A8D9BC; color: #166038;
+  border-radius: 999px; padding: 0.3rem 0.75rem;
+  font-family: 'Cabinet Grotesk', sans-serif; font-size: 0.72rem; font-weight: 700;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.h-done-btn:hover { background: #2ECC8A; border-color: #2ECC8A; color: #fff }
+.h-done-tag { font-size: 0.72rem; font-weight: 700; color: #2ECC8A; white-space: nowrap; padding: 0.3rem 0 }
+
+.empty-history { text-align: center; padding: 3rem 1rem; color: var(--muted); font-family: 'Outfit', sans-serif }
+.empty-history strong { display: block; font-size: 2rem; margin-bottom: 0.5rem }
+.empty-history p { font-size: 0.88rem; line-height: 1.6; margin-bottom: 1.25rem }
+
+.go-link {
+  display: inline-flex; align-items: center; border-radius: 12px; overflow: hidden;
+  border: none; cursor: pointer; font-family: 'Cabinet Grotesk', sans-serif;
+  transition: transform .2s; box-shadow: 0 3px 16px rgba(0,0,0,.1); text-decoration: none;
+}
+.go-link:hover { transform: translateY(-2px) }
+.go-link .gl-label { background: var(--text); color: #fff; padding: 0.75rem 1.35rem; font-size: 0.85rem; font-weight: 800 }
+.go-link .gl-arr { background: #2a2a2a; padding: 0.75rem 1rem; display: flex; align-items: center }
+.go-link .gl-arr svg { width: 14px; height: 14px; stroke: #fff; stroke-width: 2.5; fill: none; transition: transform .2s }
+.go-link:hover .gl-arr svg { transform: translateX(3px) }
+
+.loading-state { text-align: center; padding: 4rem; color: var(--muted); font-family: 'Outfit', sans-serif }
+
+footer { display: block; text-align: center; padding: 2.5rem 2rem; border-top: 1px solid var(--border); font-size: .72rem; color: var(--muted); font-family: 'Outfit', sans-serif; letter-spacing: .04em; margin-top: 4rem }
+
+@media (max-width: 600px) {
+  .stats-row { grid-template-columns: 1fr 1fr }
+  nav .nav-links { display: none }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; transition-duration: .01ms !important }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <span class="nav-brand-top">just tell me</span>
+    <span class='nav-brand-sub'>what to do</span>
+  </div>
+  <div class="nav-links">
+    <a href='index.html'>home</a>
+    <a href="app.html">the tool</a>
+    <a href='account.html' class="active">account</a>
+  </div>
+  <a href="app.html" class="nav-pill">get started</a>
+</nav>
+
+<div class="page-wrap" id="page-wrap">
+  <div class="loading-state" id="loading-state">loading...</div>
+</div>
+
+<footer>
+  just tell me what to do &nbsp;·&nbsp; no tracking &nbsp;·&nbsp; built for humans
+</footer>
+
+<script>
+const TOKEN_KEY = 'jtmwtd_token';
+const USER_KEY  = 'jtmwtd_user';
+
+function getToken() { return localStorage.getItem(TOKEN_KEY) }
+function getUser()  { try { return JSON.parse(localStorage.getItem(USER_KEY)) } catch { return null } }
+function setAuth(token, username) {
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(USER_KEY, JSON.stringify({ username }));
+}
+function clearAuth() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+}
+
+function timeAgo(ts) {
+  const m = Math.floor((Date.now() - new Date(ts)) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h/24)}d ago`;
+}
+
+const MOOD_LABELS = {
+  'focused and energised': 'focused',
+  'scattered and all over the place': 'scattered',
+  'tired and low energy': 'tired',
+  'anxious and overwhelmed': 'overwhelmed',
+  'motivated and ready to go': 'hyped',
+  'bored and restless': 'bored'
+};
+
+async function api(path, opts = {}) {
+  const token = getToken();
+  const res = await fetch(path, {
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(opts.headers || {})
+    }
+  });
+  return res;
+}
+
+async function init() {
+  const token = getToken();
+  if (!token) { showAuth('login'); return; }
+  try {
+    const res = await api('/api/auth/me');
+    if (!res.ok) { clearAuth(); showAuth('login'); return; }
+    const user = await res.json();
+    setAuth(token, user.username);
+    showDashboard(user);
+  } catch {
+    showAuth('login');
+  }
+}
+
+function showAuth(mode) {
+  const wrap = document.getElementById('page-wrap');
+  wrap.innerHTML = `
+    <div class="auth-wrap" id="auth-wrap">
+      <div class='auth-icon'>
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div class="auth-title" id="auth-title">${mode === 'login' ? 'welcome back' : 'create account'}</div>
+      <p class='auth-sub' id="auth-sub">${mode === 'login' ? 'log in to see your history and streak.' : 'just a username and password. that\'s it.'}</p>
+      <div class="auth-card">
+        <div class='auth-field'>
+          <label class="auth-label">username</label>
+          <input class='auth-input' id="auth-user" type="text" placeholder="your username" autocomplete="username">
+        </div>
+        <div class="auth-field" style='margin-bottom:0'>
+          <label class='auth-label'>password</label>
+          <input class="auth-input" id="auth-pass" type="password" placeholder="your password" autocomplete="${mode === 'login' ? 'current-password' : 'new-password'}">
+        </div>
+        <div class='auth-err' id="auth-err"></div>
+        <button class="auth-btn" id="auth-btn" onclick="submitAuth('${mode}')">
+          <div class='auth-spin' id="auth-spin"></div>
+          <span id='auth-btn-label'>${mode === 'login' ? 'log in' : 'create account'}</span>
+        </button>
+        <div class="auth-switch">
+          ${mode === 'login'
+            ? `don't have an account? <a onclick="showAuth('register')">sign up</a>`
+            : `already have an account? <a onclick="showAuth('login')">log in</a>`}
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('auth-pass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitAuth(mode);
+  });
+
+  gsap.from('.auth-wrap', { y: 30, opacity: 0, duration: 0.7, ease: 'power3.out' });
+}
+
+async function submitAuth(mode) {
+  const username = document.getElementById('auth-user').value.trim();
+  const password = document.getElementById('auth-pass').value;
+  const err = document.getElementById('auth-err');
+  const btn = document.getElementById('auth-btn');
+  const spin = document.getElementById('auth-spin');
+  const label = document.getElementById('auth-btn-label');
+
+  if (!username || !password) {
+    err.textContent = 'fill in both fields.'; err.classList.add('show'); return;
+  }
+  err.classList.remove('show');
+  btn.disabled = true; spin.style.display = 'block'; label.textContent = '...';
+
+  try {
+    const res = await fetch(`/api/auth/${mode}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'something went wrong');
+    setAuth(data.token, data.username);
+    const userRes = await api('/api/auth/me');
+    const user = await userRes.json();
+    showDashboard(user);
+  } catch(e) {
+    err.textContent = e.message; err.classList.add('show');
+    btn.disabled = false; spin.style.display = 'none';
+    label.textContent = mode === 'login' ? 'log in' : 'create account';
+  }
+}
+
+async function showDashboard(user) {
+  const wrap = document.getElementById('page-wrap');
+  wrap.innerHTML = `<div class="loading-state">loading your history...</div>`;
+
+  let history = [];
+  try {
+    const res = await api('/api/history');
+    if (res.ok) history = await res.json();
+  } catch {}
+
+  const total = history.length;
+  const done  = history.filter(h => h.completed).length;
+  const rate  = total > 0 ? Math.round((done / total) * 100) : 0;
+  const streak = user.streak || 0;
+
+  const today = new Date().toDateString();
+  const sessionDays = new Set(history.map(h => new Date(h.createdAt).toDateString()));
+  const streakDays = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(Date.now() - (13 - i) * 86400000).toDateString();
+    const cls = d === today ? 'today' : sessionDays.has(d) ? 'done' : '';
+    return `<div class='streak-day ${cls}'></div>`;
+  }).join('');
+
+  const historyHTML = history.length === 0 ? `
+    <div class="empty-history">
+      <strong>📭</strong>
+      <p>no history yet. use the tool and your actions will show up here.</p>
+      <a href='app.html' class="go-link">
+        <span class="gl-label">use the tool</span>
+        <span class='gl-arr'><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+      </a>
+    </div>
+  ` : history.map(h => `
+    <div class="history-item" id="hi-${h._id}">
+      <div class='h-dot ${h.completed ? "done" : "pending"}'></div>
+      <div class="h-text">
+        <div class='h-action'>${h.action}</div>
+        <div class="h-meta">${MOOD_LABELS[h.mood] || h.mood || ''} ${h.time ? '· ' + h.time : ''} · ${timeAgo(h.createdAt)}</div>
+      </div>
+      ${h.completed
+        ? `<span class='h-done-tag'>✓ done</span>`
+        : `<button class="h-done-btn" onclick="markDone('${h._id}')">did it</button>`}
+    </div>
+  `).join('');
+
+  wrap.innerHTML = `
+    <div class="dash-header">
+      <div>
+        <div class='dash-greeting'>hey, <em>${user.username}</em>.</div>
+        <div class="dash-meta">member since ${new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</div>
+      </div>
+      <button class='logout-btn' onclick="logout()">log out</button>
+    </div>
+
+    <div class="stats-row">
+      <div class='stat-card'>
+        <div class="stat-label">streak</div>
+        <div class='stat-val accent'>${streak}</div>
+        <div class="stat-note">days in a row</div>
+        <div class='streak-row'>${streakDays}</div>
+      </div>
+      <div class="stat-card">
+        <div class='stat-label'>total sessions</div>
+        <div class="stat-val">${total}</div>
+        <div class='stat-note'>brain dumps</div>
+      </div>
+      <div class='stat-card'>
+        <div class="stat-label">completion rate</div>
+        <div class='stat-val green'>${rate}%</div>
+        <div class="stat-note">tasks marked done</div>
+      </div>
+    </div>
+
+    <div class="history-card">
+      <div class='history-head'>
+        <div class="history-title">your history</div>
+        <div class='history-count'>${total} session${total !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="history-list">${historyHTML}</div>
+    </div>
+  `;
+
+  gsap.from('.dash-header', { y: 20, opacity: 0, duration: 0.6, ease: 'power3.out' });
+  gsap.from('.stat-card', { y: 30, opacity: 0, duration: 0.6, ease: 'power3.out', stagger: 0.1, delay: 0.1 });
+  gsap.from('.history-card', { y: 30, opacity: 0, duration: 0.6, ease: 'power3.out', delay: 0.3 });
+}
+
+async function markDone(id) {
+  try {
+    const res = await api(`/api/history/${id}/done`, { method: 'PATCH' });
+    if (!res.ok) return;
+    const item = document.getElementById(`hi-${id}`);
+    if (item) {
+      item.querySelector('.h-dot').className = 'h-dot done';
+      item.querySelector('.h-done-btn').outerHTML = `<span class='h-done-tag'>✓ done</span>`;
+    }
+  } catch {}
+}
+
+function logout() {
+  clearAuth();
+  showAuth('login');
+}
+
+document.getElementById('loading-state')?.remove();
+init();
+</script>
+</body>
+</html>
