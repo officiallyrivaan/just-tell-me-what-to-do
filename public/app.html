@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name='viewport' content="width=device-width, initial-scale=1.0">
-<title>the tool — just tell me what to do</title>
+<title id="page-title-tag">the tool — just tell me what to do</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel='stylesheet'>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
@@ -50,7 +50,15 @@ nav {
   max-width: 820px; margin: 0 auto;
 }
 
-.page-eyebrow { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.85rem }
+.page-eyebrow-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.85rem }
+.page-eyebrow { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mode-accent, var(--accent)) }
+.change-mode-link {
+  font-size: 0.72rem; font-weight: 700; color: var(--muted); text-decoration: none;
+  display: inline-flex; align-items: center; gap: 0.35rem; font-family: 'Outfit', sans-serif;
+  border: 1.5px solid var(--border); border-radius: 999px; padding: 0.35rem 0.85rem 0.35rem 0.7rem;
+  transition: all .15s;
+}
+.change-mode-link:hover { border-color: var(--text); color: var(--text) }
 .page-title { font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; letter-spacing: -0.035em; line-height: 1.05; margin-bottom: 0.75rem }
 .page-sub { font-size: 0.95rem; color: var(--muted); font-family: 'Outfit', sans-serif; margin-bottom: 3rem; line-height: 1.65 }
 
@@ -308,16 +316,20 @@ footer { display: block; text-align: center; padding: 2.5rem 2rem; border-top: 1
   </div>
   <div class="nav-links">
     <a href='index.html'>home</a>
-    <a href="app.html" class='active'>the tool</a>
-    <a href='dashboard.html'>my patterns</a>
+    <a href="modes.html">modes</a>
   </div>
-  <a href="app.html" class="nav-pill">get started</a>
+  <a href="modes.html" class="nav-pill">get started</a>
 </nav>
 
 <div class="page-wrap">
-  <div class="page-eyebrow">the tool</div>
-  <h1 class='page-title'>tell me about right now</h1>
-  <p class="page-sub">pick your time, your mood, dump what's in your head. get one action back.</p>
+  <div class="page-eyebrow-row">
+    <div class="page-eyebrow" id="page-eyebrow">the tool</div>
+    <a href="modes.html" class="change-mode-link">
+      <span id="mode-icon">🎯</span> change mode
+    </a>
+  </div>
+  <h1 class='page-title' id="page-title">tell me about right now</h1>
+  <p class="page-sub" id="page-sub">pick your time, your mood, dump what's in your head. get one action back.</p>
 
   <div class="app-card">
     <div class="app-inner">
@@ -372,12 +384,12 @@ footer { display: block; text-align: center; padding: 2.5rem 2rem; border-top: 1
       <div class="result" id="result">
         <div class="result-card">
           <div class="result-top">
-            <div class='r-eyebrow'>do this right now</div>
+            <div class='r-eyebrow' id="r-eyebrow">do this right now</div>
             <div class="r-action" id="r-action"></div>
           </div>
           <div class="result-body">
             <div>
-              <div class='r-why-label'>why this</div>
+              <div class='r-why-label' id="r-why-label">why this</div>
               <div class="r-why" id="r-why"></div>
             </div>
             <div class="r-time" id="r-time"></div>
@@ -455,6 +467,78 @@ footer { display: block; text-align: center; padding: 2.5rem 2rem; border-top: 1
 </footer>
 
 <script>
+const MODES = {
+  decide: {
+    icon: '🎯', accent: '#FF4D2E', label: 'just decide',
+    eyebrow: 'just decide', title: 'tell me about right now',
+    sub: "pick your time, your mood, dump what's in your head. get one action back.",
+    resultEyebrow: 'do this right now', whyLabel: 'why this',
+    placeholder: "just type everything — tasks, worries, ideas, stuff you've been putting off. don't filter it.",
+    btnIdle: 'tell me what to do'
+  },
+  vent: {
+    icon: '🗣️', accent: '#2E7DFF', label: 'vent',
+    eyebrow: 'vent', title: "let it out",
+    sub: "no productivity talk. just tell it what's weighing on you and get one small, gentle thing back.",
+    resultEyebrow: 'try this', whyLabel: 'hearing you out',
+    placeholder: "say whatever's actually going on — no filtering, no need to make it make sense.",
+    btnIdle: 'let it out'
+  },
+  roast: {
+    icon: '🔥', accent: '#c23519', label: 'roast me',
+    eyebrow: 'roast me', title: "okay, what's the excuse this time",
+    sub: "dump your stalling, your to-do list, whatever. get roasted, then get told exactly what to do.",
+    resultEyebrow: 'no more excuses', whyLabel: 'the roast',
+    placeholder: "tell it what you've been avoiding and why. don't hold back the excuses either.",
+    btnIdle: 'roast me'
+  },
+  hype: {
+    icon: '⚡', accent: '#2ECC8A', label: 'hype me up',
+    eyebrow: 'hype me up', title: "let's get you moving",
+    sub: "dump what's on your plate and get hyped up about the one thing that gets momentum going.",
+    resultEyebrow: "let's go", whyLabel: 'why this one',
+    placeholder: "what's on your mind, what are you trying to get going on?",
+    btnIdle: 'hype me up'
+  },
+  reflect: {
+    icon: '🪞', accent: '#7B5EA7', label: 'talk it through',
+    eyebrow: 'talk it through', title: "let's think this through",
+    sub: "lay it all out and get help seeing what actually matters right now, plus one grounded next step.",
+    resultEyebrow: 'here\u2019s what stands out', whyLabel: 'the clarity',
+    placeholder: "what's going on in your head? lay it all out, messy is fine.",
+    btnIdle: 'talk it through'
+  },
+  plan: {
+    icon: '🗂️', accent: '#B07800', label: 'break it down',
+    eyebrow: 'break it down', title: "let's sort this out",
+    sub: "dump the whole task list in your head. get back the single highest-leverage next step.",
+    resultEyebrow: 'next up', whyLabel: 'why this first',
+    placeholder: "list out everything on your plate — tasks, deadlines, half-finished things.",
+    btnIdle: 'break it down'
+  }
+};
+
+const params = new URLSearchParams(window.location.search);
+const modeId = params.get('mode');
+if (!modeId || !MODES[modeId]) {
+  window.location.href = 'modes.html';
+}
+const mode = MODES[modeId] || MODES.decide;
+
+function applyMode() {
+  document.documentElement.style.setProperty('--mode-accent', mode.accent);
+  document.getElementById('page-eyebrow').textContent = mode.eyebrow;
+  document.getElementById('mode-icon').textContent = mode.icon;
+  document.getElementById('page-title').textContent = mode.title;
+  document.getElementById('page-sub').textContent = mode.sub;
+  document.getElementById('dump').placeholder = mode.placeholder;
+  document.getElementById('btn-label').textContent = mode.btnIdle;
+  document.getElementById('r-eyebrow').textContent = mode.resultEyebrow;
+  document.getElementById('r-why-label').textContent = mode.whyLabel;
+  document.getElementById('page-title-tag').textContent = `${mode.label} — just tell me what to do`;
+}
+applyMode();
+
 const state = { time: null, mood: null };
 
 document.querySelectorAll('.chip').forEach(c => {
@@ -497,7 +581,7 @@ async function go() {
     const res = await fetch('/api/decide', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ time: state.time, mood: state.mood, dump, limits })
+      body: JSON.stringify({ time: state.time, mood: state.mood, dump, limits, mode: modeId })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `error ${res.status}`);
@@ -512,7 +596,6 @@ async function go() {
     result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
     addToPile(data.action, data.duration);
-    logSession(state.mood, state.time, data.action);
 
     setTimeout(() => {
       document.getElementById('timer-action-text').textContent = data.action;
@@ -525,7 +608,7 @@ async function go() {
     err.classList.add('show');
   }
 
-  btn.disabled = false; spin.style.display = 'none'; label.textContent = 'tell me what to do';
+  btn.disabled = false; spin.style.display = 'none'; label.textContent = mode.btnIdle;
 }
 
 function reset() {
@@ -626,41 +709,8 @@ function skipTimer() {
 }
 
 function markDone(did) {
-  if (did) {
-    const action = document.getElementById('r-action').textContent;
-    markStreakDay();
-    saveCompletedSession(action);
-  }
   document.getElementById('timer-wrap').classList.remove('show');
   resetTimer();
-}
-
-// STREAK
-function markStreakDay() {
-  const today = new Date().toDateString();
-  const data = JSON.parse(localStorage.getItem('jtmwtd_streak') || '{"streak":0,"lastDay":""}');
-  const yesterday = new Date(Date.now() - 86400000).toDateString();
-  if (data.lastDay === today) return;
-  data.streak = (data.lastDay === yesterday) ? data.streak + 1 : 1;
-  data.lastDay = today;
-  localStorage.setItem('jtmwtd_streak', JSON.stringify(data));
-}
-
-function saveCompletedSession(action) {
-  const sessions = JSON.parse(localStorage.getItem('jtmwtd_sessions') || '[]');
-  sessions.unshift({ action, mood: state.mood, time: state.time, ts: Date.now(), completed: true });
-  if (sessions.length > 50) sessions.pop();
-  localStorage.setItem('jtmwtd_sessions', JSON.stringify(sessions));
-}
-
-function logSession(mood, time, action) {
-  const sessions = JSON.parse(localStorage.getItem('jtmwtd_sessions') || '[]');
-  const existing = sessions.findIndex(s => s.action === action && !s.completed);
-  if (existing === -1) {
-    sessions.unshift({ action, mood, time, ts: Date.now(), completed: false });
-    if (sessions.length > 50) sessions.pop();
-    localStorage.setItem('jtmwtd_sessions', JSON.stringify(sessions));
-  }
 }
 
 // PILE

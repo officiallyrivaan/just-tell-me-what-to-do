@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name='viewport' content="width=device-width, initial-scale=1.0">
+<title>modes — just tell me what to do</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel='stylesheet'>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+html { scroll-behavior: smooth }
+
+:root {
+  --bg: #F2EFE8;
+  --surface: #fff;
+  --border: #E2DDD4;
+  --text: #111009;
+  --muted: #8A8278;
+  --accent: #FF4D2E;
+}
+
+body { background: var(--bg); color: var(--text); font-family: 'Cabinet Grotesk', sans-serif; overflow-x: hidden }
+
+nav {
+  position: fixed; top: 1.5rem; left: 50%; transform: translateX(-50%);
+  z-index: 100; background: rgba(242,239,232,0.88); backdrop-filter: blur(20px);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 0.6rem 0.6rem 0.6rem 1.75rem;
+  display: flex; align-items: center; gap: 2.5rem; width: fit-content;
+}
+.nav-brand { display: flex; flex-direction: column; gap: 1px }
+.nav-brand-top { font-weight: 900; font-size: 0.82rem; letter-spacing: -0.02em; line-height: 1; color: var(--text) }
+.nav-brand-sub { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); line-height: 1 }
+.nav-links { display: flex; gap: 1.75rem }
+.nav-links a { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-decoration: none; transition: color .2s; letter-spacing: -0.01em }
+.nav-links a:hover { color: var(--text) }
+.nav-links a.active { color: var(--text) }
+.nav-pill {
+  background: var(--text); color: #fff; border: none; border-radius: 999px;
+  padding: 0.55rem 1.25rem; font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all .2s;
+  text-decoration: none; display: inline-flex; align-items: center;
+}
+.nav-pill:hover { background: var(--accent) }
+
+.page-wrap { min-height: 100vh; padding: 9rem 2rem 5rem; max-width: 1080px; margin: 0 auto }
+
+.page-header { margin-bottom: 3rem }
+.page-eyebrow { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.85rem }
+.page-title { font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; letter-spacing: -0.035em; line-height: 1.05 }
+.page-sub { font-size: 0.95rem; color: var(--muted); font-family: 'Outfit', sans-serif; margin-top: 0.65rem; line-height: 1.65; max-width: 540px }
+
+.mode-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+}
+
+.mode-card {
+  position: relative; display: block; text-decoration: none; color: inherit;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 24px; padding: 1.75rem; overflow: hidden;
+  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+.mode-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: var(--m-accent, var(--accent));
+}
+.mode-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0,0,0,.08);
+  border-color: var(--m-accent, var(--accent));
+}
+
+.mode-icon {
+  width: 46px; height: 46px; border-radius: 14px;
+  background: color-mix(in srgb, var(--m-accent, var(--accent)) 14%, white);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.35rem; margin-bottom: 1.25rem;
+}
+
+.mode-name { font-size: 1.15rem; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 0.3rem }
+.mode-tag {
+  font-size: 0.66rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--m-accent, var(--accent)); margin-bottom: 0.85rem; font-family: 'Outfit', sans-serif;
+}
+.mode-desc { font-size: 0.85rem; color: var(--muted); font-family: 'Outfit', sans-serif; line-height: 1.6; margin-bottom: 1.5rem }
+
+.mode-go {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.8rem; font-weight: 700; color: var(--text);
+}
+.mode-go svg { width: 14px; height: 14px; stroke: var(--text); stroke-width: 2.5; fill: none; transition: transform .2s }
+.mode-card:hover .mode-go svg { transform: translateX(4px) }
+
+.dice-row { display: flex; justify-content: center; margin-top: 2.5rem }
+.dice-btn {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  padding: 0.75rem 1.5rem; border-radius: 999px; border: 1.5px solid var(--border);
+  background: var(--surface); font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 0.85rem; font-weight: 700; color: var(--muted); cursor: pointer; transition: all .15s;
+}
+.dice-btn:hover { border-color: var(--text); color: var(--text) }
+
+footer { display: block; text-align: center; padding: 2.5rem 2rem; border-top: 1px solid var(--border); font-size: .72rem; color: var(--muted); font-family: 'Outfit', sans-serif; letter-spacing: .04em; margin-top: 4rem }
+
+@media (max-width: 900px) {
+  .mode-grid { grid-template-columns: repeat(2, 1fr) }
+}
+@media (max-width: 620px) {
+  .mode-grid { grid-template-columns: 1fr }
+  nav .nav-links { display: none }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; transition-duration: .01ms !important }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <span class="nav-brand-top">just tell me</span>
+    <span class='nav-brand-sub'>what to do</span>
+  </div>
+  <div class="nav-links">
+    <a href='index.html'>home</a>
+    <a href="modes.html" class="active">modes</a>
+  </div>
+  <a href="modes.html" class="nav-pill">get started</a>
+</nav>
+
+<div class="page-wrap">
+  <div class="page-header">
+    <div class='page-eyebrow'>pick your mode</div>
+    <h1 class="page-title">how do you want this to feel?</h1>
+    <p class='page-sub'>same brain dump, different AI on the other end. pick the voice that fits what you actually need right now.</p>
+  </div>
+
+  <div class="mode-grid" id="mode-grid"></div>
+
+  <div class="dice-row">
+    <button class="dice-btn" onclick="pickRandom()">
+      <span>🎲</span> surprise me
+    </button>
+  </div>
+</div>
+
+<footer>
+  just tell me what to do &nbsp;·&nbsp; no accounts &nbsp;·&nbsp; no tracking &nbsp;·&nbsp; built for humans
+</footer>
+
+<script>
+gsap.registerPlugin ? null : null;
+
+const MODES = [
+  {
+    id: 'decide',
+    icon: '🎯',
+    accent: '#FF4D2E',
+    name: 'just decide',
+    tag: 'default',
+    desc: 'brutally honest best friend energy. tell it what\'s going on, get exactly one thing to do. no therapy, no fluff.'
+  },
+  {
+    id: 'vent',
+    icon: '🗣️',
+    accent: '#2E7DFF',
+    name: 'vent',
+    tag: 'therapy-lite',
+    desc: 'you just need to get it out. a calm, patient listener who validates first and gives you one small, gentle step.'
+  },
+  {
+    id: 'roast',
+    icon: '🔥',
+    accent: '#c23519',
+    name: 'roast me',
+    tag: 'tough love',
+    desc: 'stop babying me. a savage, funny friend who calls out your excuses and hands you one blunt thing to actually do.'
+  },
+  {
+    id: 'hype',
+    icon: '⚡',
+    accent: '#2ECC8A',
+    name: 'hype me up',
+    tag: 'motivation',
+    desc: 'high-energy hype-man mode. gets you pumped about one specific action so you actually want to start.'
+  },
+  {
+    id: 'reflect',
+    icon: '🪞',
+    accent: '#7B5EA7',
+    name: 'talk it through',
+    tag: 'clarity',
+    desc: 'a calm coach who thinks alongside you — points out what actually matters in your dump, then one grounded next step.'
+  },
+  {
+    id: 'plan',
+    icon: '🗂️',
+    accent: '#B07800',
+    name: 'break it down',
+    tag: 'project manager',
+    desc: 'treats your brain dump like an unsorted task list and hands back the single highest-leverage next step.'
+  }
+];
+
+function render() {
+  const grid = document.getElementById('mode-grid');
+  grid.innerHTML = MODES.map(m => `
+    <a class="mode-card" href="app.html?mode=${m.id}" style="--m-accent:${m.accent}">
+      <div class="mode-icon">${m.icon}</div>
+      <div class="mode-name">${m.name}</div>
+      <div class='mode-tag'>${m.tag}</div>
+      <div class="mode-desc">${m.desc}</div>
+      <span class='mode-go'>start
+        <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </span>
+    </a>
+  `).join('');
+
+  if (window.gsap) {
+    gsap.utils.toArray('.mode-card').forEach((card, i) => {
+      gsap.from(card, { y: 30, opacity: 0, duration: .6, ease: 'power3.out', delay: i * 0.06 });
+    });
+  }
+}
+
+function pickRandom() {
+  const m = MODES[Math.floor(Math.random() * MODES.length)];
+  window.location.href = `app.html?mode=${m.id}`;
+}
+
+render();
+</script>
+</body>
+</html>
