@@ -33,15 +33,39 @@ nav {
   top: 1.5rem; left: 50%;
   transform: translateX(-50%);
   z-index: 100;
-  background: rgba(242,239,232,0.88);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
+  width: fit-content;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255,255,255,0.62), rgba(255,255,255,0.22));
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.55);
   border-radius: 999px;
   padding: 0.6rem 0.6rem 0.6rem 1.75rem;
   display: flex;
   align-items: center;
   gap: 2.5rem;
-  width: fit-content;
+  box-shadow:
+    0 10px 40px rgba(17,16,9,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.9),
+    inset 0 -1px 10px rgba(17,16,9,0.05);
+  transition: box-shadow .3s ease, background .3s ease;
+}
+nav::before {
+  content: '';
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(120deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 68%, rgba(255,255,255,0.3) 100%);
+}
+nav::after {
+  content: '';
+  position: absolute; left: 6%; right: 6%; top: 1px; height: 1px; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.95), transparent);
+}
+nav:hover {
+  box-shadow:
+    0 14px 48px rgba(17,16,9,0.16),
+    inset 0 1px 0 rgba(255,255,255,0.95),
+    inset 0 -1px 10px rgba(17,16,9,0.06);
 }
 .nav-brand { display: flex; flex-direction: column; gap: 1px }
 .nav-brand-top { font-weight: 900; font-size: 0.82rem; letter-spacing: -0.02em; line-height: 1; color: var(--text) }
