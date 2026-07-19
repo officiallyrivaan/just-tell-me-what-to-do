@@ -9,25 +9,34 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const requests = new Map();
 const RATE_LIMIT = 10;
 const RATE_WINDOW = 60 * 1000;
 
-function rateLimit(req, res, next) {
-  const ip = req.ip || req.connection.remoteAddress;
-  const now = Date.now();
-  const entry = requests.get(ip) || { count: 0, start: now };
-  if (now - entry.start > RATE_WINDOW) {
-    requests.set(ip, { count: 1, start: now });
-    return next();
-  }
-  if (entry.count >= RATE_LIMIT) {
-    return res.status(429).json({ error: 'Too many requests. Wait a moment and try again.' });
-  }
-  entry.count++;
-  requests.set(ip, entry);
-  next();
+function makeRateLimiter(limit, windowMs) {
+  const store = new Map();
+  return function rateLimit(req, res, next) {
+    const ip = req.ip || req.connection.remoteAddress;
+    const now = Date.now();
+    const entry = store.get(ip) || { count: 0, start: now };
+    if (now - entry.start > windowMs) {
+      store.set(ip, { count: 1, start: now });
+      return next();
+    }
+    if (entry.count >= limit) {
+      return res.status(429).json({ error: 'Too many requests. Wait a moment and try again.' });
+    }
+    entry.count++;
+    store.set(ip, entry);
+    next();
+  };
 }
+
+// /api/decide is the expensive, user-facing call — keep its original budget.
+const rateLimit = makeRateLimiter(RATE_LIMIT, RATE_WINDOW);
+// /api/recommend-mode is a small, cheap pre-check that can fire once per submit
+// alongside /api/decide — give it its own, more generous budget so it doesn't
+// eat into the main rate limit.
+const recommendRateLimit = makeRateLimiter(20, RATE_WINDOW);
 
 // AI modes — each is a persona + a slightly different job to do with the same
 // brain dump. All of them still return { action, why, duration } so the
@@ -183,6 +192,92 @@ ${m.schema}`;
   } catch (e) {
     console.error('[/api/decide error]', e.message);
     res.status(500).json({ error: e.message || 'Something went wrong. Try again.' });
+  }
+});
+
+// Reads the brain dump against the mode the person currently has selected and
+// says whether a different mode would clearly suit it better. Deliberately
+// conservative: if the current mode is a reasonable fit, or the call fails for
+// any reason, it recommends nothing rather than interrupt the person's flow —
+// a bad/uncertain suggestion is worse than no suggestion.
+app.post('/api/recommend-mode', recommendRateLimit, async (req, res) => {
+  const { time, mood, dump, limits, currentMode } = req.body;
+
+  if (!dump || typeof dump !== 'string' || !dump.trim()) {
+    return res.json({ recommended: null, reason: '' });
+  }
+  if (dump.length > 2000) {
+    return res.status(400).json({ error: 'Brain dump is too long. Keep it under 2000 characters.' });
+  }
+
+  const GROQ_KEY = process.env.GROQ_API_KEY;
+  if (!GROQ_KEY || GROQ_KEY === 'your_groq_api_key_here') {
+    // Fail open — no key configured shouldn't block the main "just tell me" flow.
+    return res.json({ recommended: null, reason: '' });
+  }
+
+  const current = MODES[currentMode] ? currentMode : 'decide';
+  const modeList = Object.entries(MODES)
+    .map(([id, m]) => `- ${id}: ${m.persona} ${m.job}`)
+    .join('\n');
+
+  const prompt = `A person picked the "${current}" mode on a decision-fatigue app, then wrote this brain dump. Your only job is to judge whether a DIFFERENT mode from the list below would clearly serve them better than the one they picked.
+
+Modes available:
+${modeList}
+
+What they wrote:
+- Time available: ${time || 'not specified'}
+- How they're feeling: ${mood || 'not specified'}
+- Brain dump: ${dump}
+- Constraints: ${limits || 'none'}
+
+Be conservative. Only recommend a change if the mismatch is obvious and clear-cut (e.g. they're clearly venting about something heavy but picked "roast me", or they listed a stack of unrelated tasks but picked "vent"). If their current mode is a reasonable fit, or you're not sure, recommend nothing.
+
+Reply ONLY with raw JSON (no markdown, no backticks, no explanation outside the JSON):
+{
+  "recommended": "mode id from the list above that fits clearly better, or null if their current mode is fine",
+  "reason": "one short, casual sentence (under 18 words) explaining why that mode fits — empty string if recommended is null"
+}`;
+
+  try {
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.2,
+        max_tokens: 150
+      })
+    });
+
+    if (!groqRes.ok) {
+      // Fail open — a classifier hiccup shouldn't block the person from getting their answer.
+      return res.json({ recommended: null, reason: '' });
+    }
+
+    const data = await groqRes.json();
+    const raw = data.choices?.[0]?.message?.content || '';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+
+    const isValidSuggestion =
+      parsed.recommended &&
+      typeof parsed.recommended === 'string' &&
+      MODES[parsed.recommended] &&
+      parsed.recommended !== current;
+
+    res.json({
+      recommended: isValidSuggestion ? parsed.recommended : null,
+      reason: isValidSuggestion ? String(parsed.reason || '').slice(0, 200) : ''
+    });
+  } catch (e) {
+    console.error('[/api/recommend-mode error]', e.message);
+    res.json({ recommended: null, reason: '' }); // fail open
   }
 });
 
