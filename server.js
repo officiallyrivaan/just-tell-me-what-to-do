@@ -200,10 +200,42 @@ ${m.schema}`;
 // conservative: if the current mode is a reasonable fit, or the call fails for
 // any reason, it recommends nothing rather than interrupt the person's flow —
 // a bad/uncertain suggestion is worse than no suggestion.
+//
+// llama-3.1-8b-instant is small and fast, which is great for latency here, but
+// a soft "be conservative" instruction alone isn't enough to keep a small model
+// from over-triggering — it tends to want to always produce *some* verdict. Two
+// things pin it down instead of just asking nicely:
+//   1. Few-shot examples covering BOTH outcomes (good fit -> null, bad fit ->
+//      a mode), so it has a concrete bar to match rather than an abstract one.
+//   2. A separate "fits_current_mode" boolean the model must set, which the
+//      server then uses as a hard gate — "recommended" is only ever honored
+//      when the model also explicitly said the current mode does NOT fit.
+//      That's a deterministic safety net independent of whether the model
+//      stays internally consistent on any single call.
+const FEW_SHOT_EXAMPLES = `Examples of correct judgments:
+
+1) current mode: roast me | dump: "everything just feels like too much right now, I don't even know what's wrong, I just feel kind of sad and stuck"
+   -> {"fits_current_mode": false, "recommended": "vent", "reason": "this reads as genuinely heavy, not a stalling excuse to call out."}
+
+2) current mode: vent | dump: "need to email the landlord, finish the report, call the bank, and grab groceries before 6"
+   -> {"fits_current_mode": false, "recommended": "plan", "reason": "this is a stacked task list, not something to sit with."}
+
+3) current mode: decide | dump: "kind of bored, nothing urgent, just want something to do for the next 30 min"
+   -> {"fits_current_mode": true, "recommended": null, "reason": ""}
+
+4) current mode: roast me | dump: "I've been avoiding calling the dentist for three weeks for no real reason"
+   -> {"fits_current_mode": true, "recommended": null, "reason": ""}
+
+5) current mode: hype me up | dump: "big presentation tomorrow, feeling nervous, need to start prepping tonight"
+   -> {"fits_current_mode": true, "recommended": null, "reason": ""}`;
+
+const MIN_DUMP_LENGTH_FOR_RECOMMENDATION = 20;
+
 app.post('/api/recommend-mode', recommendRateLimit, async (req, res) => {
   const { time, mood, dump, limits, currentMode } = req.body;
 
-  if (!dump || typeof dump !== 'string' || !dump.trim()) {
+  if (!dump || typeof dump !== 'string' || dump.trim().length < MIN_DUMP_LENGTH_FOR_RECOMMENDATION) {
+    // Too short to judge reliably — guessing here does more harm than good.
     return res.json({ recommended: null, reason: '' });
   }
   if (dump.length > 2000) {
@@ -221,23 +253,27 @@ app.post('/api/recommend-mode', recommendRateLimit, async (req, res) => {
     .map(([id, m]) => `- ${id}: ${m.persona} ${m.job}`)
     .join('\n');
 
-  const prompt = `A person picked the "${current}" mode on a decision-fatigue app, then wrote this brain dump. Your only job is to judge whether a DIFFERENT mode from the list below would clearly serve them better than the one they picked.
+  const prompt = `A person picked the "${current}" mode on a decision-fatigue app, then wrote the brain dump below. Judge ONLY whether "${current}" is a reasonable fit for what they wrote — not whether some other mode might theoretically also work.
 
 Modes available:
 ${modeList}
 
-What they wrote:
+${FEW_SHOT_EXAMPLES}
+
+Now judge this one:
+current mode: ${current}
 - Time available: ${time || 'not specified'}
 - How they're feeling: ${mood || 'not specified'}
 - Brain dump: ${dump}
 - Constraints: ${limits || 'none'}
 
-Be conservative. Only recommend a change if the mismatch is obvious and clear-cut (e.g. they're clearly venting about something heavy but picked "roast me", or they listed a stack of unrelated tasks but picked "vent"). If their current mode is a reasonable fit, or you're not sure, recommend nothing.
+Default assumption: the mode they picked is fine. Only set "fits_current_mode" to false if the mismatch is as obvious as examples 1 and 2 above — genuinely heavy content in a joke/tough-love mode, or a plain task list in an emotional-processing mode, or the reverse. Vague, short, or ambiguous dumps are NOT grounds to say it doesn't fit — default to true whenever you're unsure.
 
-Reply ONLY with raw JSON (no markdown, no backticks, no explanation outside the JSON):
+Reply ONLY with raw JSON (no markdown, no backticks, no explanation outside the JSON), matching the example format exactly:
 {
-  "recommended": "mode id from the list above that fits clearly better, or null if their current mode is fine",
-  "reason": "one short, casual sentence (under 18 words) explaining why that mode fits — empty string if recommended is null"
+  "fits_current_mode": true or false,
+  "recommended": "mode id that fits clearly better, or null if fits_current_mode is true",
+  "reason": "one short, casual sentence (under 18 words) — empty string if fits_current_mode is true"
 }`;
 
   try {
@@ -250,8 +286,8 @@ Reply ONLY with raw JSON (no markdown, no backticks, no explanation outside the 
       body: JSON.stringify({
         model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.2,
-        max_tokens: 150
+        temperature: 0,
+        max_tokens: 200
       })
     });
 
@@ -265,7 +301,12 @@ Reply ONLY with raw JSON (no markdown, no backticks, no explanation outside the 
     const clean = raw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
 
+    // Hard gate: the model must have explicitly said the current mode does NOT
+    // fit. If it left that unset, said true, or was inconsistent (fits=false
+    // but no valid mode), we still fall back to "no recommendation" — the
+    // recommendation is only ever honored when both signals agree.
     const isValidSuggestion =
+      parsed.fits_current_mode === false &&
       parsed.recommended &&
       typeof parsed.recommended === 'string' &&
       MODES[parsed.recommended] &&
