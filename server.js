@@ -227,7 +227,10 @@ const FEW_SHOT_EXAMPLES = `Examples of correct judgments:
    -> {"fits_current_mode": true, "recommended": null, "reason": ""}
 
 5) current mode: hype me up | dump: "big presentation tomorrow, feeling nervous, need to start prepping tonight"
-   -> {"fits_current_mode": true, "recommended": null, "reason": ""}`;
+   -> {"fits_current_mode": true, "recommended": null, "reason": ""}
+
+6) current mode: talk it through | dump: "stuck on a recursion bug in my sorting algorithm, also have a calculus problem set due tomorrow, don't even know where to start"
+   -> {"fits_current_mode": false, "recommended": "decide", "reason": "this is a concrete technical task, not something to sit and process — just pick one and start."}`;
 
 const MIN_DUMP_LENGTH_FOR_RECOMMENDATION = 20;
 
@@ -267,7 +270,9 @@ current mode: ${current}
 - Brain dump: ${dump}
 - Constraints: ${limits || 'none'}
 
-Default assumption: the mode they picked is fine. Only set "fits_current_mode" to false if the mismatch is as obvious as examples 1 and 2 above — genuinely heavy content in a joke/tough-love mode, or a plain task list in an emotional-processing mode, or the reverse. Vague, short, or ambiguous dumps are NOT grounds to say it doesn't fit — default to true whenever you're unsure.
+Default assumption: the mode they picked is fine. Set "fits_current_mode" to false whenever the mismatch is at least as clear as examples 1, 2, and 6 above — genuinely heavy content in a joke/tough-love mode, a plain task list in an emotional-processing mode, or the reverse. Don't require an extreme mismatch to flag it; a clear-enough one is sufficient. Vague, short, or ambiguous dumps are still NOT grounds to say it doesn't fit — default to true only when you're genuinely unsure.
+
+Specific rule: if current mode is "vent", "roast me", or "talk it through", and the dump is really a concrete, solvable technical task — a coding bug, a math/CS problem set, debugging, an assignment with clear steps — recommend "decide" instead. That kind of content needs one concrete next step, not venting, roasting, or reflecting.
 
 Reply ONLY with raw JSON (no markdown, no backticks, no explanation outside the JSON), matching the example format exactly:
 {
